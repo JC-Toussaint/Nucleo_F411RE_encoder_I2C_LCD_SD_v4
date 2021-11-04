@@ -33,7 +33,11 @@ int main(void) {
     e2->value = 2.0;
     emdlist_pushback(list, (void*) e2);
 
+    printf("print\n");
     emdlist_print(list, print);
+
+    printf("reverse print\n");
+    emdlist_reverse_print(list, print);
 
     element *e3= (element*) malloc(sizeof(element));
     e3->number= 3;
@@ -45,46 +49,61 @@ int main(void) {
     e4->value = 4.0;
     emdlist_pushback(list, (void*) e4);
 
+    printf("print 3 1 2 4\n");
+    emdlist_print(list, print);
+
     element *e5=NULL;
     emdlist_pushback(list, (void*) e5);
 
     element *e6=NULL;
     emdlist_pushback(list, (void*) e6);
 
+    printf("print 3 1 2 4 nil nil\n");
     emdlist_print(list, print);
 
     emdlist_popback(list);
     emdlist_popfront(list);
     emdlist_popback(list);
+
+    printf("print 1 2 4\n");
     emdlist_print(list, print);
 
     emdlist_popfront(list);
+    printf("print 2 4\n");
     emdlist_print(list, print);
 
     element *e7= (element*) malloc(sizeof(element));
     e7->number= 7;
     e7->value = 7.0;
     emdlist_pushback(list, (void*) e7);
+
+    printf("print 2 4 7\n");
     emdlist_print(list, print);
 
     emdlist_remove(list, e4);
+    printf("after removing e4 -> print 2 7\n");
     emdlist_print(list, print);
 
     emdlist_pushback(list, (void*) e1);
     emdlist_pushback(list, (void*) e1);
+    printf("print 2 7 1 1\n");
     emdlist_print(list, print);
 
+    printf("print 2 7 1\n");
     emdlist_remove(list, e1);
     emdlist_print(list, print);
 
     emdlist_pushfront(list, (void*) e3);
     emdlist_pushback(list, (void*) e3);
 
+    printf("print 3 2 7 1 3\n");
     emdlist_print(list, print);
 
     emdlist_remove(list, e1);
+    printf("after removing 1 -> print 3 2 7 3\n");
     emdlist_print(list, print);
 
+    printf("after removing 1 again -> print 3 2 7 3\n");
     emdlist_remove(list, e1);
     emdlist_print(list, print);
     return 0;

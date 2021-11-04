@@ -27,6 +27,7 @@ struct DoubleLinkedList {
 typedef struct DoubleLinkedList DoubleLinkedList;
 
 struct DoubleLinkedListIterator {
+   DoubleLinkedListElement* curr;
    DoubleLinkedListElement* prev;
    DoubleLinkedListElement* next;
 };

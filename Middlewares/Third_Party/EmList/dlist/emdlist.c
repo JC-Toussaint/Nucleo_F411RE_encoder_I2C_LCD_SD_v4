@@ -25,33 +25,28 @@ void emdlist_initialize(DoubleLinkedList* list) {
 }
 
 bool emdlist_contains(DoubleLinkedList* list, void* value) {
-    DoubleLinkedListIterator iterator = emdlist_iterator(list);
-    DoubleLinkedListElement* candidate = NULL;
-    while((candidate = emdlist_iterator_next(&iterator)) != NULL) {
-        if(candidate->value == value) {
-            return true;
+    for (DoubleLinkedListIterator it = emdlist_iterator(list); it.curr !=NULL; emdlist_iterator_next(&it)){
+        DoubleLinkedListElement* candidate = it.curr;
+        if (candidate->value == value) {
+           return true;
+           }
         }
-    }
     return false;
 }
 
 void emdlist_print(DoubleLinkedList* list, fun_ptr print) {
-    DoubleLinkedListIterator iterator = emdlist_iterator(list);
-    DoubleLinkedListElement* candidate = NULL;
     printf("head %p tail %p\n", list->head, list->tail);
-    while((candidate = emdlist_iterator_next(&iterator)) != NULL) {
-         print(candidate);
-    }
+    for (DoubleLinkedListIterator it = emdlist_iterator(list); it.curr !=NULL; emdlist_iterator_next(&it)){
+        print(it.curr);
+        }
     printf("----------------------------------------------\n");
 }
 
 void emdlist_reverse_print(DoubleLinkedList* list, fun_ptr print) {
-    DoubleLinkedListIterator iterator = emdlist_reverse_iterator(list);
-    DoubleLinkedListElement* candidate = NULL;
     printf("head %p tail %p\n", list->head, list->tail);
-    while((candidate = emdlist_iterator_prev(&iterator)) != NULL) {
-         print(candidate);
-    }
+    for (DoubleLinkedListIterator it = emdlist_reverse_iterator(list); it.curr !=NULL; emdlist_iterator_prev(&it)){
+        print(it.curr);
+        }
     printf("----------------------------------------------\n");
 }
 
@@ -82,8 +77,7 @@ bool emdlist_insert(DoubleLinkedList* list, void* value) {
 }
 
 bool emdlist_pushfront(DoubleLinkedList* list, void* value) {
-    DoubleLinkedListElement* element = (DoubleLinkedListElement*) malloc(
-            sizeof(DoubleLinkedListElement));
+    DoubleLinkedListElement* element = (DoubleLinkedListElement*) malloc(sizeof(DoubleLinkedListElement));
     if(element != NULL) {
         element->value = value;
         element->prev = NULL;
@@ -92,8 +86,8 @@ bool emdlist_pushfront(DoubleLinkedList* list, void* value) {
             list->head = element;
             list->tail = element;
         } else {
-            DoubleLinkedListIterator iterator = emdlist_iterator(list);   // = list->head
-            DoubleLinkedListElement* current = emdlist_iterator_next(&iterator); // list->head->next
+            DoubleLinkedListIterator it = emdlist_iterator(list);   // = list->head
+            DoubleLinkedListElement* current = it.curr; 
             element->next=current;
             current->prev=element;
             list->head = element;
@@ -105,9 +99,9 @@ bool emdlist_pushfront(DoubleLinkedList* list, void* value) {
 
 bool emdlist_remove(DoubleLinkedList* list, void* value) {
     DoubleLinkedListElement* prev = NULL;
-    DoubleLinkedListElement* curr = NULL;
-    DoubleLinkedListIterator iterator = emdlist_iterator(list);
-    while((curr = emdlist_iterator_next(&iterator)) != NULL) {
+     NULL;
+    for (DoubleLinkedListIterator it = emdlist_iterator(list); it.curr !=NULL; emdlist_iterator_next(&it)){
+        DoubleLinkedListElement* curr = it.curr;
         if(curr->value == value) {
             DoubleLinkedListElement* next = curr->next;
             if(prev == NULL) {
@@ -121,7 +115,7 @@ bool emdlist_remove(DoubleLinkedList* list, void* value) {
             return true;
         }
         prev = curr;
-    }
+        }
     return false;
 }
 
@@ -163,15 +157,17 @@ bool emdlist_is_empty(DoubleLinkedList* list) {
 
 DoubleLinkedListIterator emdlist_iterator(DoubleLinkedList* list) {
     DoubleLinkedListIterator iterator;
-    iterator.prev = (list != NULL ? list->tail : NULL); // NULL;
-    iterator.next = (list != NULL ? list->head : NULL);
+    iterator.curr = (list != NULL ? list->head : NULL); 
+    iterator.prev = NULL;
+    iterator.next = (iterator.curr != NULL ? iterator.curr->next : NULL);
     return iterator;
 }
 
 DoubleLinkedListIterator emdlist_reverse_iterator(DoubleLinkedList* list) {
     DoubleLinkedListIterator iterator;
-    iterator.prev = (list != NULL ? list->tail : NULL);
-    iterator.next = (list != NULL ? list->head : NULL);  // NULL;
+    iterator.curr = (list != NULL ? list->tail : NULL); 
+    iterator.prev = (iterator.curr != NULL ? iterator.curr->prev : NULL);
+    iterator.next = NULL;
     return iterator;
 }
 
@@ -180,6 +176,7 @@ DoubleLinkedListElement* emdlist_iterator_next(DoubleLinkedListIterator* iterato
     DoubleLinkedListElement* next = NULL;
     if(iterator != NULL) {
         next = iterator->next;
+        iterator->curr = next;
         iterator->prev = (next != NULL ? next->prev : NULL);
         iterator->next = (next != NULL ? next->next : NULL);
     }
@@ -191,6 +188,7 @@ DoubleLinkedListElement* emdlist_iterator_prev(DoubleLinkedListIterator* iterato
     DoubleLinkedListElement* next = NULL;
     if(iterator != NULL) {
         prev = iterator->prev;
+        iterator->curr = prev;
         iterator->prev = (prev != NULL ? prev->prev : NULL);
         iterator->next = (prev != NULL ? prev->next : NULL);
     }

@@ -214,24 +214,28 @@ int main(void)
 	printf("==== list of files =======\n");
 
 	{ // list of files
-	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
-			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
+		DoubleLinkedListIterator iterator = emdlist_iterator(&dlist);
+		DoubleLinkedListElement* candidate = NULL;
+
+		// emdlist_iterator_next(&iterator) pointer to the first element
+		while((candidate = emdlist_iterator_next(&iterator)) != NULL) {
+			DIR *dir = candidate->value;
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
 			FRESULT res = read_filename(path, *dir, buffer);
 			if (res != FR_OK) continue;
 			printf("%s\n", buffer);
-	        }
+		}
 	}
 
 	printf("==============================================\n");
 
 	/*##-7- Open the text file object with read access ###############*/
 	{ // content of files
-	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
-			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
+		DoubleLinkedListIterator iterator = emdlist_iterator(&dlist);
+		DoubleLinkedListElement* candidate = NULL;
+		while((candidate = emdlist_iterator_next(&iterator)) != NULL) {
+			DIR *dir = candidate->value;
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
 			FRESULT res = read_filename(path, *dir, buffer);
@@ -261,11 +265,14 @@ int main(void)
 	printf("====== clean files list ========\n");
 
 	{ // list of files
+		DoubleLinkedListIterator iterator = emdlist_iterator(&dlist_clean);
+		DoubleLinkedListElement* candidate = NULL;
+		// emdlist_iterator_next(&iterator) pointer to the first element
 
-	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist_clean); it.curr !=NULL; emdlist_iterator_next(&it)){
-			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
-			printf("current  %x  next %x prev %x\n", curr, curr->next, curr->prev);
+		while((candidate = emdlist_iterator_next(&iterator)) != NULL) {
+			DIR *dir = candidate->value;
+			printf("current  %x  next %x prev %x\n", candidate, candidate->next, candidate->prev);
+			printf("# iterator.next %x iterator.prev %x\n", iterator.next, iterator.prev);
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
 			FRESULT res = read_filename(path, *dir, buffer);
@@ -282,23 +289,6 @@ int main(void)
 	//DoubleLinkedListElement* pos = emdlist_iterator_next(&iterator);
 	int32_t cnt0 = (int32_t) __HAL_TIM_GET_COUNTER(&htim2);
 
-    DoubleLinkedListIterator it = iterator;
-	lcd_clear_display();
-	lcd_home();
-    for (int nrow=1; nrow<=4; nrow++){
-		DoubleLinkedListElement* curr = it.curr;
-		if (!curr) break;
-		DIR *dir = curr->value;
-		FRESULT res = read_filename(path, *dir, buffer);
-
-		snprintf(str, 20, "%s", buffer);
-		lcd_locate(nrow, 1);
-		lcd_print_string (str);
-
-		if (res == FR_OK) printf("%s\n", buffer);
-		emdlist_iterator_next(&it);
-        }
-
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -314,61 +304,75 @@ int main(void)
 		int32_t cnt = (int32_t) __HAL_TIM_GET_COUNTER(&htim2);
 		int offset=cnt-cnt0;
 		cnt0=cnt;
+		snprintf(str, 21, "%10d%10d", cnt, offset);
+		lcd_locate(1, 1);
+		lcd_print_string (str);
 
-		if (offset>0){
+		if (offset>=0){
 			printf("offset %d\n", offset);
-			//HAL_Delay(2000);
+			HAL_Delay(2000);
 			for (int it=0; it<offset; it++){
 				printf("next\n");
-				DoubleLinkedListIterator backup_iterator = iterator;
 				emdlist_iterator_next(&iterator);
-				if (iterator.curr == NULL) iterator=backup_iterator;
 			}
-            printf("iterator.curr %x\n", iterator.curr);
-
-		    DoubleLinkedListIterator it = iterator;
-			lcd_clear_display();
-			lcd_home();
-		    for (int nrow=1; nrow<=4; nrow++){
-				DoubleLinkedListElement* curr = it.curr;
-				if (!curr) break;
-				DIR *dir = curr->value;
+			// emdlist_iterator_next(&iterator) pointer to the first element
+			DoubleLinkedListIterator local_iterator = iterator;
+			DoubleLinkedListElement* candidate = NULL;
+			while((candidate = emdlist_iterator_next(&local_iterator)) != NULL) {
+				DIR *dir = candidate->value;
+				snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
+				printf("%s\n", buffer);
 				FRESULT res = read_filename(path, *dir, buffer);
-				snprintf(str, 20, "%s", buffer);
-				lcd_locate(nrow, 1);
-				lcd_print_string (str);
+				if (res != FR_OK) continue;
+				printf("%s\n", buffer);
+			}
 
-				if (res == FR_OK) printf("%s\n", buffer);
-				emdlist_iterator_next(&it);
-		        }
+//			DoubleLinkedListIterator local_iterator = iterator;
+//			for (int nrow=0; nrow<4; nrow++){
+//				DoubleLinkedListElement* candidate = emdlist_iterator_next(&local_iterator);
+//				if (candidate == NULL) break;
+//				DIR *dir = candidate->value;
+//				snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
+//				printf("%s\n", buffer);
+//				FRESULT res = read_filename(path, *dir, buffer);
+//				if (res != FR_OK) continue;
+//
+//				buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
+//				printf("filename : %s\n", buffer);
+//			}
 		}
 		if (offset<0){
 			printf("offset %d\n", offset);
-			//HAL_Delay(2000);
+			HAL_Delay(2000);
 			for (int it=0; it>offset; it--){
 				printf("prev\n");
-				DoubleLinkedListIterator backup_iterator = iterator;
 				emdlist_iterator_prev(&iterator);
-				if (iterator.curr == NULL) iterator=backup_iterator;
 			}
-            printf("iterator.curr %x\n", iterator.curr);
-
-		    DoubleLinkedListIterator it = iterator;
-			lcd_clear_display();
-			lcd_home();
-		    for (int nrow=1; nrow<=4; nrow++){
-				DoubleLinkedListElement* curr = it.curr;
-				if (!curr) break;
-				DIR *dir = curr->value;
+			// emdlist_iterator_next(&iterator) pointer to the first element
+			DoubleLinkedListIterator local_iterator = iterator;
+			DoubleLinkedListElement* candidate = NULL;
+			while((candidate = emdlist_iterator_prev(&local_iterator)) != NULL) {
+				DIR *dir = candidate->value;
+				snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
+				printf("%s\n", buffer);
 				FRESULT res = read_filename(path, *dir, buffer);
+				if (res != FR_OK) continue;
+				printf("%s\n", buffer);
+			}
 
-				snprintf(str, 20, "%s", buffer);
-				lcd_locate(nrow, 1);
-				lcd_print_string (str);
-
-				if (res == FR_OK) printf("%s\n", buffer);
-				emdlist_iterator_next(&it);
-		        }
+//			DoubleLinkedListIterator local_iterator = iterator;
+//			for (int nrow=0; nrow<4; nrow++){
+//				DoubleLinkedListElement* candidate = emdlist_iterator_next(&local_iterator);
+//				if (candidate == NULL) break;
+//				DIR *dir = candidate->value;
+//				snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
+//				printf("%s\n", buffer);
+//				FRESULT res = read_filename(path, *dir, buffer);
+//				if (res != FR_OK) continue;
+//
+//				buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
+//				printf("filename : %s\n", buffer);
+//			}
 		}
 
 
@@ -765,8 +769,7 @@ FRESULT read_filename(char* path, DIR target_dir, char* fname)        /* Start n
 			return FR_INT_ERR;
 		}
 
-		//snprintf(fname, STRING_SZ, "%s/%s", path, fno.fname);
-		snprintf(fname, STRING_SZ, "%s", fno.fname);
+		snprintf(fname, STRING_SZ, "%s/%s", path, fno.fname);
 	}
 	f_closedir(&dir);
 
