@@ -86,6 +86,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 bool SELECT_BUTTON_state = true;
+bool PROCESS_state = false;
 
 uint8_t BlinkSpeed = 0, str[20];
 __IO uint8_t JoystickValue = 0;
@@ -279,7 +280,6 @@ int main(void)
 	printf("SCROLLING\n");
 
 	DoubleLinkedListIterator iterator = emdlist_iterator(&dlist_clean);
-	//DoubleLinkedListElement* pos = emdlist_iterator_next(&iterator);
 	int32_t cnt0 = (int32_t) __HAL_TIM_GET_COUNTER(&htim2);
 
     DoubleLinkedListIterator it = iterator;
@@ -291,13 +291,15 @@ int main(void)
 		DIR *dir = curr->value;
 		FRESULT res = read_filename(path, *dir, buffer);
 
-		snprintf(str, 20, "%s", buffer);
+		snprintf(str, 20, " %s", buffer);
 		lcd_locate(nrow, 1);
 		lcd_print_string (str);
 
 		if (res == FR_OK) printf("%s\n", buffer);
 		emdlist_iterator_next(&it);
         }
+	lcd_locate(1, 1);
+	lcd_print_string (">");
 
 	/* USER CODE END 2 */
 
@@ -308,8 +310,6 @@ int main(void)
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		//printf("%lu \n", __HAL_TIM_GET_COUNTER(&htim2));
-
 		char str[21];
 		int32_t cnt = (int32_t) __HAL_TIM_GET_COUNTER(&htim2);
 		int offset=cnt-cnt0;
@@ -317,7 +317,6 @@ int main(void)
 
 		if (offset>0){
 			printf("offset %d\n", offset);
-			//HAL_Delay(2000);
 			for (int it=0; it<offset; it++){
 				printf("next\n");
 				DoubleLinkedListIterator backup_iterator = iterator;
@@ -334,17 +333,18 @@ int main(void)
 				if (!curr) break;
 				DIR *dir = curr->value;
 				FRESULT res = read_filename(path, *dir, buffer);
-				snprintf(str, 20, "%s", buffer);
+				snprintf(str, 20, " %s", buffer);
 				lcd_locate(nrow, 1);
 				lcd_print_string (str);
 
 				if (res == FR_OK) printf("%s\n", buffer);
 				emdlist_iterator_next(&it);
 		        }
+			lcd_locate(1, 1);
+			lcd_print_string (">");
 		}
 		if (offset<0){
 			printf("offset %d\n", offset);
-			//HAL_Delay(2000);
 			for (int it=0; it>offset; it--){
 				printf("prev\n");
 				DoubleLinkedListIterator backup_iterator = iterator;
@@ -362,18 +362,32 @@ int main(void)
 				DIR *dir = curr->value;
 				FRESULT res = read_filename(path, *dir, buffer);
 
-				snprintf(str, 20, "%s", buffer);
+				snprintf(str, 20, " %s", buffer);
 				lcd_locate(nrow, 1);
 				lcd_print_string (str);
 
 				if (res == FR_OK) printf("%s\n", buffer);
 				emdlist_iterator_next(&it);
 		        }
+			lcd_locate(1, 1);
+			lcd_print_string (">");
 		}
 
 
+	if ((SELECT_BUTTON_state == true) && (PROCESS_state == true)) {
+		DoubleLinkedListIterator it = iterator;
+	    //lcd_clear_display();
+	    //lcd_home();
+		DoubleLinkedListElement* curr = it.curr;
+		if (!curr) Error_Handler();
+		DIR *dir = curr->value;
+		FRESULT res = read_filename(path, *dir, buffer);
 
-		//HAL_Delay(500);
+		snprintf(str, 20, "*%s", buffer);
+		lcd_locate(1, 1);
+		lcd_print_string (str);
+		PROCESS_state = false;
+	}
 	}
 	/* USER CODE END 3 */
 }
@@ -696,6 +710,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance==TIM1){
 		if(HAL_GPIO_ReadPin(SELECT_BUTTON_GPIO_Port, SELECT_BUTTON_Pin) == GPIO_PIN_RESET){
 			SELECT_BUTTON_state = true;
+			PROCESS_state = true;
 			printf("SELECT_BUTTON pressed %lu\n", __HAL_TIM_GET_COUNTER(&htim2));
 			HAL_TIM_Base_Stop_IT(&htim1);
 		}
