@@ -217,7 +217,7 @@ int main(void)
 	{ // list of files
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
+			DIR *dir = curr->data;
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
 			FRESULT res = read_filename(path, *dir, buffer);
@@ -232,7 +232,7 @@ int main(void)
 	{ // content of files
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
+			DIR *dir = curr->data;
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
 			FRESULT res = read_filename(path, *dir, buffer);
@@ -265,7 +265,7 @@ int main(void)
 
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist_clean); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->value;
+			DIR *dir = curr->data;
 			printf("current  %x  next %x prev %x\n", curr, curr->next, curr->prev);
 			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
 			printf("%s\n", buffer);
@@ -288,7 +288,7 @@ int main(void)
     for (int nrow=1; nrow<=4; nrow++){
 		DoubleLinkedListElement* curr = it.curr;
 		if (!curr) break;
-		DIR *dir = curr->value;
+		DIR *dir = curr->data;
 		FRESULT res = read_filename(path, *dir, buffer);
 
 		snprintf(str, 20, " %s", buffer);
@@ -331,7 +331,7 @@ int main(void)
 		    for (int nrow=1; nrow<=4; nrow++){
 				DoubleLinkedListElement* curr = it.curr;
 				if (!curr) break;
-				DIR *dir = curr->value;
+				DIR *dir = curr->data;
 				FRESULT res = read_filename(path, *dir, buffer);
 				snprintf(str, 20, " %s", buffer);
 				lcd_locate(nrow, 1);
@@ -359,7 +359,7 @@ int main(void)
 		    for (int nrow=1; nrow<=4; nrow++){
 				DoubleLinkedListElement* curr = it.curr;
 				if (!curr) break;
-				DIR *dir = curr->value;
+				DIR *dir = curr->data;
 				FRESULT res = read_filename(path, *dir, buffer);
 
 				snprintf(str, 20, " %s", buffer);
@@ -380,7 +380,7 @@ int main(void)
 	    //lcd_home();
 		DoubleLinkedListElement* curr = it.curr;
 		if (!curr) Error_Handler();
-		DIR *dir = curr->value;
+		DIR *dir = curr->data;
 		FRESULT res = read_filename(path, *dir, buffer);
 
 		snprintf(str, 20, "*%s", buffer);
@@ -789,7 +789,7 @@ FRESULT read_filename(char* path, DIR target_dir, char* fname)        /* Start n
 }
 
 void print(DoubleLinkedListElement* candidate){
-	DIR *e=(DIR*) candidate->value;
+	DIR *e=(DIR*) candidate->data;
 	printf("%p prev %p next %p", candidate, candidate->prev, candidate->next);
 	if (e) printf(" element %p --> %p", e, e->dir);
 	printf("\n");
@@ -826,37 +826,4 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-bool emdlist_insert(DoubleLinkedList* list, void* value,  cmp_fun_ptr compare) {
-    DoubleLinkedListElement* element = (DoubleLinkedListElement*) malloc(sizeof(DoubleLinkedListElement));
-    if(element != NULL) {
-        element->value = value;
-        element->prev = NULL;
-        element->next = NULL;
-        if(emdlist_is_empty(list)) {
-            list->head = element;
-            list->tail = element;
-            }
-        else {
-            for (DoubleLinkedListIterator it = emdlist_iterator(list); it.curr !=NULL; emdlist_iterator_next(&it)){
-                DoubleLinkedListElement* curr = it.curr;
-                DoubleLinkedListElement* next = curr->next;
-                if (!next) {
-                   curr->next=element;
-                   element->prev=curr;
-                   list->tail = element;
-                   break;
-                   }
-                if (compare(curr->value, next->value)){
-                   curr->next=element;
-                   element->prev=curr;
-                   next->prev=element;
-                   element->next=next;
-                   }
-                }
-            }
-        }
-        return true;
-    }
-    return false;
-}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
