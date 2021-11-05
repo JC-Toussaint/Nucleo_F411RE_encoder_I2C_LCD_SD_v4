@@ -151,6 +151,15 @@ int UART_Transmit(USART_TypeDef *UART, uint8_t *ptr, int len){
 }
  */
 
+/*
+bool greater(element_t* e1, element_t* e2){
+     if (e1->value > e2->value)
+        return true;
+     else
+        return false;
+}
+*/
+
 /* USER CODE END 0 */
 
 /**
@@ -239,6 +248,7 @@ int main(void)
 			if (res != FR_OK) continue;
 
 			emdlist_pushfront(&dlist_clean, (void*) dir); // AJOUT 02/11/2021
+			//emdlist_insert(&dlist_clean, (void*) dir,  (cmp_fun_ptr)greater)
 
 			buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
 			printf("filename : %s\n", buffer);
