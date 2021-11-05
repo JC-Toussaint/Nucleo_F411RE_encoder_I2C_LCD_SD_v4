@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 struct DoubleLinkedListElement {
-   void* value;
+   void* data;
    struct DoubleLinkedListElement* prev;
    struct DoubleLinkedListElement* next;
 };
@@ -34,6 +34,8 @@ struct DoubleLinkedListIterator {
 typedef struct DoubleLinkedListIterator DoubleLinkedListIterator;
 
 typedef void (*fun_ptr)(DoubleLinkedListElement* candidate);
+
+typedef bool (*cmp_fun_ptr)(void* candidate1, void* candidate2);
 
 /* Public: Allocate and initialize a new, empty DoubleLinkedList.
  *
@@ -78,7 +80,7 @@ void emdlist_deinitialize(DoubleLinkedList* list);
  *
  * Returns true if the value is in the list.
  */
-bool emdlist_contains(DoubleLinkedList* list, void* value);
+bool emdlist_contains(DoubleLinkedList* list, void* data);
 
 /* Public: append a value into the list
  *
@@ -87,8 +89,16 @@ bool emdlist_contains(DoubleLinkedList* list, void* value);
  * Returns true if the value was inserted successfully. Returns false if memory
  * could not be allocated for the new element.
  */
-bool emdlist_pushback (DoubleLinkedList* list, void* value);
-bool emdlist_insert(DoubleLinkedList* list, void* value);
+bool emdlist_pushback (DoubleLinkedList* list, void* data);
+
+/* Public: insert a value into the list using a compare function
+ *
+ * This function is O(N).
+ *
+ * Returns true if the value was inserted successfully. Returns false if memory
+ * could not be allocated for the new element.
+ */
+bool emdlist_insert(DoubleLinkedList* list, void* value, cmp_fun_ptr compare);
 
 /* Public: prepend a value into the list.
  *
@@ -97,7 +107,7 @@ bool emdlist_insert(DoubleLinkedList* list, void* value);
  * Returns true if the value was inserted successfully. Returns false if memory
  * could not be allocated for the new element.
  */
-bool emdlist_pushfront(DoubleLinkedList* list, void* value);
+bool emdlist_pushfront(DoubleLinkedList* list, void* data);
 
 /* Public: Remove a value from the list, if it is in the list.
  *
@@ -110,7 +120,7 @@ bool emdlist_pushfront(DoubleLinkedList* list, void* value);
  * Returns true if the value was found in the list and succesfully removed.
  * Returns false if the value was not in the list.
  */
-bool emdlist_remove(DoubleLinkedList* list, void* value);
+bool emdlist_remove(DoubleLinkedList* list, void* data);
 
 /* Public: Remove and return the first value in the list.
  *

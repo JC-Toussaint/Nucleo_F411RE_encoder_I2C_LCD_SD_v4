@@ -826,4 +826,37 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
+bool emdlist_insert(DoubleLinkedList* list, void* value,  cmp_fun_ptr compare) {
+    DoubleLinkedListElement* element = (DoubleLinkedListElement*) malloc(sizeof(DoubleLinkedListElement));
+    if(element != NULL) {
+        element->value = value;
+        element->prev = NULL;
+        element->next = NULL;
+        if(emdlist_is_empty(list)) {
+            list->head = element;
+            list->tail = element;
+            }
+        else {
+            for (DoubleLinkedListIterator it = emdlist_iterator(list); it.curr !=NULL; emdlist_iterator_next(&it)){
+                DoubleLinkedListElement* curr = it.curr;
+                DoubleLinkedListElement* next = curr->next;
+                if (!next) {
+                   curr->next=element;
+                   element->prev=curr;
+                   list->tail = element;
+                   break;
+                   }
+                if (compare(curr->value, next->value)){
+                   curr->next=element;
+                   element->prev=curr;
+                   next->prev=element;
+                   element->next=next;
+                   }
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
