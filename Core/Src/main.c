@@ -104,7 +104,7 @@ char SD_Path[4]; /* SD card logical drive path */
 DIR  items[ITEMS_MAXSZ];   /* array of dir struct */
 UINT items_sz=0;
 
-DoubleLinkedList dlist, dlist_clean;
+DoubleLinkedList dlist;
 char buffer[STRING_SZ];
 /* USER CODE END PV */
 
@@ -167,7 +167,7 @@ bool greater(item_t* e1, item_t* e2){
 	res = read_filename(path, e2->dir, fname2);
 	if (res != FR_OK) Error_Handler();
 
-	printf("%s %s %d\n", fname1, fname2, strncmp(fname1, fname2, sizeof(fname1)));
+	//printf("%s %s %d\n", fname1, fname2, strncmp(fname1, fname2, sizeof(fname1)));
 	if (strncmp(fname1, fname2, sizeof(fname1))>0)
 		return true;
 	else
@@ -256,59 +256,11 @@ int main(void)
 
 	printf("==============================================\n");
 
-	/*##-7- Open the text file object with read access ###############*/
-	{ // content of files
-		emdlist_deinitialize(&dlist_clean);
-		for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
-			DoubleLinkedListElement* curr = it.curr;
-			item_t *item = curr->data;
-			DIR dir = item->dir;
-			FRESULT res = read_filename(path, dir, buffer);
-			if (res != FR_OK) continue;
-
-			emdlist_insert(&dlist_clean, (void*) item,  (cmp_fun_ptr)greater);
-			//emdlist_pushfront(&dlist_clean, (void*) item);
-
-			//			buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
-			//			printf("filename : %s\n", buffer);
-			//			if(f_open(&MyFile, buffer, FA_READ) != FR_OK)
-			//			{
-			//				/* file Open for read Error */
-			//				//Error_Handler();
-			//				printf("can't open %s\n ... next one", buffer);
-			//				continue;
-			//			}
-			//
-			//			//     DO NOT FORGET TO #define	_USE_STRFUNC	1  in ffconf.h
-			//			while (f_gets(buffer, STRING_SZ, &MyFile) ){
-			//				/* writing content to stdout */
-			//				printf("%s", buffer);
-			//			}
-			//			f_close(&MyFile);
-		}
-	}
-
-	printf("====== clean files list ========\n");
-
-	{ // list of files
-
-		for (DoubleLinkedListIterator it = emdlist_iterator(&dlist_clean); it.curr !=NULL; emdlist_iterator_next(&it)){
-			DoubleLinkedListElement* curr = it.curr;
-			item_t *item = curr->data;
-			DIR dir = item->dir;
-			strncpy(item->dir.fn, dir.fn, sizeof(dir.fn)); // fn string should be copied too
-
-			FRESULT res = read_filename(path, dir, buffer);
-			if (res != FR_OK) continue;
-			printf("*** filename%s\n", buffer);
-		}
-	}
 	/*##-11- Unlink the SD disk I/O driver ####################################*/
 	//FATFS_UnLinkDriver(SD_Path);
 
 	printf("SCROLLING\n");
-
-	DoubleLinkedListIterator iterator = emdlist_iterator(&dlist_clean);
+	DoubleLinkedListIterator iterator = emdlist_iterator(&dlist);
 	int32_t cnt0 = (int32_t) __HAL_TIM_GET_COUNTER(&htim2);
 
 	DoubleLinkedListIterator it = iterator;
@@ -793,8 +745,8 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 				path[i] = 0;
 			} else
 			{                                       /* It is a file. */
-//				FRESULT res = read_filename(path, dir, buffer);
-//				if (res != FR_OK) continue;
+				FRESULT res = read_filename(path, dir, buffer);
+				if (res != FR_OK) continue;
 
 				snprintf(buffer, sizeof(buffer), "%s/%s\n", path, fno.fname);
 				item_t *item = (item_t*) malloc(sizeof(item_t));
