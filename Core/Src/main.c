@@ -367,6 +367,7 @@ int main(void)
 			item_t *item = curr->data;
 			DIR dir = item->dir;
 			FRESULT res = read_filename(path, dir, buffer);
+			if (res != FR_OK) Error_Handler();
 
 			snprintf(str, 20, "*%s", buffer);
 			lcd_locate(1, 1);
@@ -682,15 +683,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-//{
-//  if(GPIO_Pin == GPIO_PIN_0) {
-//    HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_14);
-//  } else {
-//      __NOP();
-//  }
-//}
-
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	if(GPIO_Pin == SELECT_BUTTON_Pin && SELECT_BUTTON_state == true){
@@ -728,10 +720,6 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 
 	res = f_opendir(&dir, path);                       /* Open the directory */
 	if (res == FR_OK) {
-		//		DIR *item = (DIR*) malloc(sizeof(DIR));
-		//		if (!item) Error_Handler();
-		//		*item=dir;
-		//emdlist_pushfront(dlist, (void*) item);
 		for (;;) {
 			res = f_readdir(&dir, &fno);                   /* Read a directory item */
 			if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
@@ -753,11 +741,9 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 				if (!item) Error_Handler();
 				item->dir = dir;
 				strncpy(item->dir.fn, dir.fn, sizeof(dir.fn)); // fn string should be copied too
-				//snprintf(item->fname, sizeof(item->fname), "%s", fno.fname);
-				//printf("item->dir.dir %p %s %s\n", item->dir.dir, fno.fname, item->fname);
 				printf("item->dir.dir %p\n", item->dir.dir);
 
-				//emdlist_pushback(dlist, (void*) item);
+				/* insertion with sort */
 				emdlist_insert(dlist, (void*) item,  (cmp_fun_ptr)greater);
 				snprintf(buffer, sizeof(buffer), "DIR.dir pointer %p\n", dir.dir);
 				printf("%s\n", buffer);
@@ -770,55 +756,6 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 
 	return res;
 }
-
-//FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be scanned (***also used as work area***) */
-//{
-//	FRESULT res;
-//	DIR dir;
-//    UINT i;
-//	static FILINFO fno;
-//	char buffer[256];
-//
-//	res = f_opendir(&dir, path);                       /* Open the directory */
-//	if (res == FR_OK) {
-//		//		DIR *item = (DIR*) malloc(sizeof(DIR));
-//		//		if (!item) Error_Handler();
-//		//		*item=dir;
-//		//emdlist_pushfront(dlist, (void*) item);
-//		for (;;) {
-//			res = f_readdir(&dir, &fno);                   /* Read a directory item */
-//			if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-//
-//			if (fno.fattrib & AM_DIR) {                    /* It is a directory */
-//				i = strlen(path);
-//				sprintf(&path[i], "/%s", fno.fname);
-//				res = scan_files(path, dlist);     /* Enter the directory */
-//				if (res != FR_OK) break;
-//				path[i] = 0;
-//			} else
-//			{                                       /* It is a file. */
-////				FRESULT res = read_filename(path, dir, buffer);
-////				if (res != FR_OK) continue;
-//
-//				snprintf(buffer, sizeof(buffer), "%s/%s\n", path, fno.fname);
-//				item_t *item = (item_t*) malloc(sizeof(item_t));
-//				if (!item) Error_Handler();
-//				item->dir = dir;
-//				strncpy(item->dir.fn, dir.fn, sizeof(dir.fn)); // fn string should be copied too
-//				snprintf(item->fname, sizeof(item->fname), "%s", fno.fname);
-//				printf("item->dir.dir %p %s %s\n", item->dir.dir, fno.fname, item->fname);
-//
-//				emdlist_pushback(dlist, (void*) item);
-//				// emdlist_insert(dlist, (void*) item,  (cmp_fun_ptr)greater);
-//				snprintf(buffer, sizeof(buffer), "DIR.dir pointer %p\n", dir.dir);
-//				printf("%s\n", buffer);
-//			}
-//		}
-//		f_closedir(&dir);
-//	}
-//
-//	return res;
-//}
 
 FRESULT read_filename(char* path, DIR target_dir, char* fname)        /* Start node to be scanned (***also used as work area***) */
 {
@@ -856,6 +793,9 @@ void print(DoubleLinkedListElement* candidate){
 	printf("\n");
 }
 
+/* Example from
+ * http://elm-chan.org/fsw/ff/doc/readdir.html
+ */
 FRESULT original_scan_files (char* path)
 /* Start node to be scanned (***also used as work area***) */
 {
@@ -863,7 +803,6 @@ FRESULT original_scan_files (char* path)
     DIR dir;
     UINT i;
     static FILINFO fno;
-
 
     res = f_opendir(&dir, path);                       /* Open the directory */
     if (res == FR_OK) {
