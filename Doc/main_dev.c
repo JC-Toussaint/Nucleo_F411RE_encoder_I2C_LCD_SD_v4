@@ -50,6 +50,11 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+typedef struct {
+DIR dir;
+char fname[20];
+} item_t;
+
 typedef enum {
 	SHIELD_NOT_DETECTED = 0,
 	SHIELD_DETECTED
@@ -151,14 +156,15 @@ int UART_Transmit(USART_TypeDef *UART, uint8_t *ptr, int len){
 }
  */
 
-/*
-bool greater(element_t* e1, element_t* e2){
-     if (e1->value > e2->value)
-        return true;
-     else
+
+bool greater(item_t* e1, item_t* e2){
+	printf("%s %s %d\n", e1->fname, e2->fname, strncmp(e1->fname, e2->fname, sizeof(e1->fname)));
+     if (strncmp(e1->fname, e2->fname, sizeof(e1->fname)))
         return false;
+     else
+        return true;
 }
-*/
+
 
 /* USER CODE END 0 */
 
@@ -217,6 +223,7 @@ int main(void)
 	if(f_mount(&SD_FatFs, (TCHAR const*)SD_Path, 0) != FR_OK) Error_Handler();
 
 	/*##-3- Create a FAT file system (format) on the logical drive #########*/
+	emdlist_deinitialize(&dlist);
 	char path[2]="/";
 	FRESULT res = scan_files(path, &dlist);
 	if (res != FR_OK) Error_Handler();
@@ -226,10 +233,9 @@ int main(void)
 	{ // list of files
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->data;
-			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
-			printf("%s\n", buffer);
-			FRESULT res = read_filename(path, *dir, buffer);
+			item_t *item = curr->data;
+			DIR dir = item->dir;
+			FRESULT res = read_filename(path, dir, buffer);
 			if (res != FR_OK) continue;
 			printf("%s\n", buffer);
 	        }
@@ -239,33 +245,33 @@ int main(void)
 
 	/*##-7- Open the text file object with read access ###############*/
 	{ // content of files
+		emdlist_deinitialize(&dlist_clean);
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->data;
-			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
-			printf("%s\n", buffer);
-			FRESULT res = read_filename(path, *dir, buffer);
+			item_t *item = curr->data;
+			DIR dir = item->dir;
+			FRESULT res = read_filename(path, dir, buffer);
 			if (res != FR_OK) continue;
 
-			emdlist_pushfront(&dlist_clean, (void*) dir); // AJOUT 02/11/2021
-			//emdlist_insert(&dlist_clean, (void*) dir,  (cmp_fun_ptr)greater)
+			emdlist_insert(&dlist_clean, (void*) item,  (cmp_fun_ptr)greater);
+			//emdlist_pushfront(&dlist_clean, (void*) item);
 
-			buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
-			printf("filename : %s\n", buffer);
-			if(f_open(&MyFile, buffer, FA_READ) != FR_OK)
-			{
-				/* file Open for read Error */
-				//Error_Handler();
-				printf("can't open %s\n ... next one", buffer);
-				continue;
-			}
-
-			//     DO NOT FORGET TO #define	_USE_STRFUNC	1  in ffconf.h
-			while (f_gets(buffer, STRING_SZ, &MyFile) ){
-				/* writing content to stdout */
-				printf("%s", buffer);
-			}
-			f_close(&MyFile);
+//			buffer[strcspn(buffer, "\r\n")] = 0; // works for LF, CR, CRLF, LFCR, ...
+//			printf("filename : %s\n", buffer);
+//			if(f_open(&MyFile, buffer, FA_READ) != FR_OK)
+//			{
+//				/* file Open for read Error */
+//				//Error_Handler();
+//				printf("can't open %s\n ... next one", buffer);
+//				continue;
+//			}
+//
+//			//     DO NOT FORGET TO #define	_USE_STRFUNC	1  in ffconf.h
+//			while (f_gets(buffer, STRING_SZ, &MyFile) ){
+//				/* writing content to stdout */
+//				printf("%s", buffer);
+//			}
+//			f_close(&MyFile);
 		}
 	}
 
@@ -275,13 +281,13 @@ int main(void)
 
 	    for (DoubleLinkedListIterator it = emdlist_iterator(&dlist_clean); it.curr !=NULL; emdlist_iterator_next(&it)){
 			DoubleLinkedListElement* curr = it.curr;
-			DIR *dir = curr->data;
-			printf("current  %x  next %x prev %x\n", curr, curr->next, curr->prev);
-			snprintf(buffer, sizeof(buffer), "dir %p", dir->dir);
-			printf("%s\n", buffer);
-			FRESULT res = read_filename(path, *dir, buffer);
+			item_t *item = curr->data;
+			DIR dir = item->dir;
+			strncpy(item->dir.fn, dir.fn, sizeof(dir.fn)); // fn string should be copied too
+
+			FRESULT res = read_filename(path, dir, buffer);
 			if (res != FR_OK) continue;
-			printf("filename%s\n", buffer);
+			printf("*** filename%s %s\n", buffer, item->fname);
 		}
 	}
 	/*##-11- Unlink the SD disk I/O driver ####################################*/
@@ -298,8 +304,9 @@ int main(void)
     for (int nrow=1; nrow<=4; nrow++){
 		DoubleLinkedListElement* curr = it.curr;
 		if (!curr) break;
-		DIR *dir = curr->data;
-		FRESULT res = read_filename(path, *dir, buffer);
+		item_t *item = curr->data;
+		DIR dir = item->dir;
+		FRESULT res = read_filename(path, dir, buffer);
 
 		snprintf(str, 20, " %s", buffer);
 		lcd_locate(nrow, 1);
@@ -341,8 +348,9 @@ int main(void)
 		    for (int nrow=1; nrow<=4; nrow++){
 				DoubleLinkedListElement* curr = it.curr;
 				if (!curr) break;
-				DIR *dir = curr->data;
-				FRESULT res = read_filename(path, *dir, buffer);
+				item_t *item = curr->data;
+				DIR dir = item->dir;
+				FRESULT res = read_filename(path, dir, buffer);
 				snprintf(str, 20, " %s", buffer);
 				lcd_locate(nrow, 1);
 				lcd_print_string (str);
@@ -369,8 +377,9 @@ int main(void)
 		    for (int nrow=1; nrow<=4; nrow++){
 				DoubleLinkedListElement* curr = it.curr;
 				if (!curr) break;
-				DIR *dir = curr->data;
-				FRESULT res = read_filename(path, *dir, buffer);
+				item_t *item = curr->data;
+				DIR dir = item->dir;
+				FRESULT res = read_filename(path, dir, buffer);
 
 				snprintf(str, 20, " %s", buffer);
 				lcd_locate(nrow, 1);
@@ -390,13 +399,30 @@ int main(void)
 	    //lcd_home();
 		DoubleLinkedListElement* curr = it.curr;
 		if (!curr) Error_Handler();
-		DIR *dir = curr->data;
-		FRESULT res = read_filename(path, *dir, buffer);
+		item_t *item = curr->data;
+		DIR dir = item->dir;
+		FRESULT res = read_filename(path, dir, buffer);
 
 		snprintf(str, 20, "*%s", buffer);
 		lcd_locate(1, 1);
 		lcd_print_string (str);
 		PROCESS_state = false;
+
+		printf("open file %s\n", buffer);
+		if(f_open(&MyFile, buffer, FA_READ) != FR_OK)
+		{
+			/* file Open for read Error */
+			//Error_Handler();
+			printf("can't open %s\n ... next one", buffer);
+			continue;
+		}
+
+		//     DO NOT FORGET TO #define	_USE_STRFUNC	1  in ffconf.h
+		while (f_gets(buffer, STRING_SZ, &MyFile) ){
+			/* writing content to stdout */
+			printf("%s", buffer);
+		}
+		f_close(&MyFile);
 	}
 	}
 	/* USER CODE END 3 */
@@ -736,9 +762,9 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 
 	res = f_opendir(&dir, path);                       /* Open the directory */
 	if (res == FR_OK) {
-		DIR *item = (DIR*) malloc(sizeof(DIR));
-		if (!item) Error_Handler();
-		*item=dir;
+//		DIR *item = (DIR*) malloc(sizeof(DIR));
+//		if (!item) Error_Handler();
+//		*item=dir;
 		//emdlist_pushfront(dlist, (void*) item);
 		for (;;) {
 			res = f_readdir(&dir, &fno);                   /* Read a directory item */
@@ -754,11 +780,14 @@ FRESULT scan_files (char* path, DoubleLinkedList* dlist)  /* Start node to be sc
 			{                                       /* It is a file. */
 				snprintf(buffer, sizeof(buffer), "%s/%s\n", path, fno.fname);
 				printf("%s\n", buffer);
-				DIR *item = (DIR*) malloc(sizeof(DIR));
+				item_t *item = (item_t*) malloc(sizeof(item_t));
 				if (!item) Error_Handler();
-				*item=dir;
-				emdlist_pushfront(dlist, (void*) item);
+				item->dir = dir;
+				strncpy(item->dir.fn, dir.fn, sizeof(dir.fn)); // fn string should be copied too
+				snprintf(item->fname, sizeof(item->fname), "%s", fno.fname);
 
+				emdlist_pushfront(dlist, (void*) item);
+				//emdlist_insert(dlist, (void*) item,  (cmp_fun_ptr)greater);
 				snprintf(buffer, sizeof(buffer), "DIR.dir pointer %p\n", dir.dir);
 				printf("%s\n", buffer);
 			}
